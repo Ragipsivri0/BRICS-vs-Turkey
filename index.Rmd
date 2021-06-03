@@ -103,6 +103,8 @@ ggplotly(g3) %>%
 
 ```
 
+-------------------------------------------------------------------
+
 # Comparison {.tabset}
 
 ## Real GDP Per Capita {.tabset}
