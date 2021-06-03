@@ -1,0 +1,168 @@
+---
+title: "BRICS vs Turkey"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+library(data.table)
+library(haven)
+library(pwt9)
+library(ggthemes)
+library(plotly)
+library(RColorBrewer)
+pwt <- copy(pwt9.1)
+setDT(pwt)
+
+###theme_omer###
+
+theme_omer <- function() { 
+  theme(plot.title = element_text(color = "#3182bd",size = 24, face = "bold"),
+        plot.subtitle = element_text(color = "#2b8cbe", size = 16, face = "bold"),
+        panel.grid.major.x = element_line(size = 0.2, colour = "#a6cee3", linetype = "solid"),
+        panel.grid.minor.x = element_line(size = 0.1, colour = "#a6cee3"),
+        panel.grid.major.y = element_line(size = 0.2, colour = "#a6cee3", linetype = "solid"),
+        panel.grid.minor.y = element_line(size = 0.1, colour ="#a6cee3"),
+        panel.background = element_rect(fill = "#f7f7f7"),
+        axis.line = element_line(size = 1.4, colour = "#9ecae1"),
+        axis.title = element_text(size = 15, colour = "gray26", face = "bold"),
+        axis.text = element_text(size = 12, colour = "gray38",face = "bold"),
+        axis.ticks.x = element_line(size = 0.5),
+        axis.ticks.y = element_line(size = 0.5),
+        axis.ticks.length.y = unit(0.4,"cm"),
+        axis.ticks.length.x = unit(0.4,"cm"),
+        axis.title.x = element_text(vjust = 1),
+        axis.title.y = element_text(vjust = 2),
+        plot.caption = element_text(size = 10,color = "#636363"),
+        legend.position = "right",
+        legend.title = element_text(size = 12)
+  )
+}
+
+#Compare BRICS countries and Turkey
+BRICS <- pwt[country %in% c("Brazil", "Russian Federation", "India", "China", "South Africa", "Turkey")]
+BRICS[, rgdpc := rgdpo/pop]
+pwt[, rgdpc := rgdpo/pop]
+###LINE CHART###
+g1 <- ggplot(BRICS, aes(x = year, y = rgdpc, color = isocode)) + geom_line(size = 1.2) + 
+  labs(title = "Real GDP per capita",
+       subtitle = "BRICS & Turkey",
+       x = "Year", y = "Countries",
+       caption = "Source: Penn World Tables 9.1") + theme_omer() + scale_color_colorblind()
+ggplotly(g1) %>%
+  layout(title = list(text = paste0('Real GDP per capita',
+                                    '<br>',
+                                    '<sup>',
+                                    'BRICS & Turkey',
+                                    '</sup>')))
+##########BAR CHART###################
+BRICS2016 <- BRICS[year == 2016]
+g2 <- ggplot(BRICS2016, aes(x = rgdpc, y = country )) + 
+  geom_bar(stat = "identity",color = "#d95f02", fill = "#d95f02") + theme_omer() +
+  labs(title = "Real GDP per capita in 2016",
+       subtitle = "BRICS & Turkey",
+       x = "Real GDP per capita, PPP, 2011 prices", y = "Countries",
+       caption = "Source: Penn World Tables 9.1")
+ggplotly(g2) %>%
+  layout(title = list(text = paste0('Real GDP per capita in 2016',
+                                    '<br>',
+                                    '<sup>',
+                                    'BRICS & Turkey',
+                                    '</sup>')))
+###SCATTER CHART###
+pwt2016 <- pwt[year == 2016]
+pwt2016[, black := ifelse(country %in% "Brazil" | country %in% "Russian Federation" | country %in% "India"
+                          | country %in% "China"| country %in% "South Africa"| country %in% "Turkey", 0, 1)]
+
+pwt2016[, isocode := ifelse(black == 1, "Others", ifelse(black == 0 & country == "Brazil", "BRA",
+                                                         ifelse(black == 0 & country == "Russian Federation", "RUS",
+                                                                ifelse(black == 0 & country == "China", "CHN",
+                                                                       ifelse(black == 0 & country == "India", "IND",
+                                                                              ifelse(black == 0 & country == "Turkey", "TUR",
+                                                                                     ifelse(black == 0 & country == "South Africa", "ZAF",0
+                                                                                     )))))))]
+a <- c("#b2182b", "#ef8a62", "#b35806", "#000000", "#542788", "#67a9cf", "#2166ac")
+
+g3 <- ggplot(pwt2016, aes(x = rgdpc, y = ctfp, color = isocode)) + 
+  geom_point(size = 1.5) +
+  scale_color_manual(values = a) +
+  labs(title = "Real GDP per capita vs. TFP",
+       subtitle = "BRICS & Turkey",
+       x = "Real GDP per capita", y = "Total Factor Productivity",
+       caption = "Source: Penn World Tables 9.1") + theme_omer() +
+  geom_smooth(formula = y ~ x, method = "lm", se = FALSE, color = "#7570b3") +
+  geom_point(data = BRICS2016, shape = 18, size = 2)
+ggplotly(g3) %>%
+  layout(title = list(text = paste0('Real GDP per capita vs. TFP',
+                                    '<br>',
+                                    '<sup>',
+                                    'BRICS & Turkey',
+                                    '</sup>'))) 
+
+```
+
+# Comparison {.tabset}
+
+## Real GDP Per Capita {.tabset}
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+ggplotly(g1) %>%
+  layout(title = list(text = paste0('Real GDP per capita',
+                                    '<br>',
+                                    '<sup>',
+                                    'BRICS & Turkey',
+                                    '</sup>')))
+```
+
+## Real GDP Per Capita in 2016 {.tabset}
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+ggplotly(g2) %>%
+  layout(title = list(text = paste0('Real GDP per capita in 2016',
+                                    '<br>',
+                                    '<sup>',
+                                    'BRICS & Turkey',
+                                    '</sup>')))
+```
+
+## Real GDP Per Capita vs TFP {.tabset}
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+ggplotly(g3) %>%
+  layout(title = list(text = paste0('Real GDP per capita vs. TFP',
+                                    '<br>',
+                                    '<sup>',
+                                    'BRICS & Turkey',
+                                    '</sup>'))) 
+```
+
+# Theme
+
+```{r}
+theme_omer <- function() { 
+  theme(plot.title = element_text(color = "#3182bd",size = 24, face = "bold"),
+        plot.subtitle = element_text(color = "#2b8cbe", size = 16, face = "bold"),
+        panel.grid.major.x = element_line(size = 0.2, colour = "#a6cee3", linetype = "solid"),
+        panel.grid.minor.x = element_line(size = 0.1, colour = "#a6cee3"),
+        panel.grid.major.y = element_line(size = 0.2, colour = "#a6cee3", linetype = "solid"),
+        panel.grid.minor.y = element_line(size = 0.1, colour ="#a6cee3"),
+        panel.background = element_rect(fill = "#f7f7f7"),
+        axis.line = element_line(size = 1.4, colour = "#9ecae1"),
+        axis.title = element_text(size = 15, colour = "gray26", face = "bold"),
+        axis.text = element_text(size = 12, colour = "gray38",face = "bold"),
+        axis.ticks.x = element_line(size = 0.5),
+        axis.ticks.y = element_line(size = 0.5),
+        axis.ticks.length.y = unit(0.4,"cm"),
+        axis.ticks.length.x = unit(0.4,"cm"),
+        axis.title.x = element_text(vjust = 1),
+        axis.title.y = element_text(vjust = 2),
+        plot.caption = element_text(size = 10,color = "#636363"),
+        legend.position = "right",
+        legend.title = element_text(size = 12)
+  )
+}
+
+```
+
